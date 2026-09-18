@@ -44,7 +44,7 @@ export default function PlaylistView({ playlist, onUpdatePlaylist }) {
 
     setIsLoading(true);
     const videoDetails = await getVideoDetails(newVideoUrl);
-    
+
     if (videoDetails) {
       const updatedVideos = [...playlist.videos, videoDetails];
       onUpdatePlaylist({ ...playlist, videos: updatedVideos });
@@ -81,7 +81,7 @@ export default function PlaylistView({ playlist, onUpdatePlaylist }) {
     e.stopPropagation();
     const updatedVideos = [...playlist.videos];
     updatedVideos.splice(index, 1);
-    
+
     let newIndex = currentVideoIndex;
     if (index < currentVideoIndex) {
       newIndex--;
@@ -92,7 +92,7 @@ export default function PlaylistView({ playlist, onUpdatePlaylist }) {
         newIndex = Math.max(0, updatedVideos.length - 1);
       }
     }
-    
+
     setCurrentVideoIndex(newIndex);
     onUpdatePlaylist({ ...playlist, videos: updatedVideos });
   };
@@ -170,7 +170,7 @@ export default function PlaylistView({ playlist, onUpdatePlaylist }) {
             disabled={isLoading}
           />
           <button type="submit" className="btn" disabled={isLoading}>
-            {isLoading ? 'Adding...' : <><Plus size={20} /> Add Video</>}
+            {isLoading ? 'Adding...' : <><Plus size={20} /> Add Song</>}
           </button>
         </form>
       </div>
@@ -195,55 +195,55 @@ export default function PlaylistView({ playlist, onUpdatePlaylist }) {
               onStateChange={onPlayerStateChange}
             />
           </div>
-          
+
           {/* Custom Audio Bar UI */}
           <div className="audio-bar">
-             <div className="audio-bar-content">
-               <div className="audio-bar-thumb-wrapper">
-                 <img src={currentVideo.thumbnail} alt="" className="audio-bar-thumb" />
-                 {isPlaying && (
-                    <div className="audio-wave">
-                      <Music size={24} className="music-icon floating" />
-                    </div>
-                 )}
-               </div>
-               
-               <div className="audio-bar-info">
-                 <span className="now-playing-label">DATA SAVER AUDIO MODE</span>
-                 <h3>{currentVideo.title}</h3>
-                 
-                 <div className="progress-container">
-                   <span className="time-text">{formatTime(currentTime)}</span>
-                   <input 
-                     type="range" 
-                     className="progress-slider" 
-                     min={0} 
-                     max={duration || 100} 
-                     value={currentTime} 
-                     onChange={handleSeek}
-                   />
-                   <span className="time-text">{formatTime(duration)}</span>
-                 </div>
-               </div>
-               
-               <div className="audio-controls">
-                 <div className="volume-container">
-                   {volume === 0 ? <VolumeX size={20} className="text-muted" /> : <Volume2 size={20} className="text-muted" />}
-                   <input 
-                     type="range" 
-                     className="volume-slider" 
-                     min={0} 
-                     max={100} 
-                     value={volume} 
-                     onChange={handleVolumeChange}
-                   />
-                 </div>
-                 
-                 <button className="play-pause-btn" onClick={togglePlayPause}>
-                    {isPlaying ? <Pause size={28} fill="currentColor" /> : <Play size={28} fill="currentColor" />}
-                 </button>
-               </div>
-             </div>
+            <div className="audio-bar-content">
+              <div className="audio-bar-thumb-wrapper">
+                <img src={currentVideo.thumbnail} alt="" className="audio-bar-thumb" />
+                {isPlaying && (
+                  <div className="audio-wave">
+                    <Music size={24} className="music-icon floating" />
+                  </div>
+                )}
+              </div>
+
+              <div className="audio-bar-info">
+                <span className="now-playing-label">DATA SAVER AUDIO MODE</span>
+                <h3>{currentVideo.title}</h3>
+
+                <div className="progress-container">
+                  <span className="time-text">{formatTime(currentTime)}</span>
+                  <input
+                    type="range"
+                    className="progress-slider"
+                    min={0}
+                    max={duration || 100}
+                    value={currentTime}
+                    onChange={handleSeek}
+                  />
+                  <span className="time-text">{formatTime(duration)}</span>
+                </div>
+              </div>
+
+              <div className="audio-controls">
+                <div className="volume-container">
+                  {volume === 0 ? <VolumeX size={20} className="text-muted" /> : <Volume2 size={20} className="text-muted" />}
+                  <input
+                    type="range"
+                    className="volume-slider"
+                    min={0}
+                    max={100}
+                    value={volume}
+                    onChange={handleVolumeChange}
+                  />
+                </div>
+
+                <button className="play-pause-btn" onClick={togglePlayPause}>
+                  {isPlaying ? <Pause size={28} fill="currentColor" /> : <Play size={28} fill="currentColor" />}
+                </button>
+              </div>
+            </div>
           </div>
         </div>
       )}
@@ -277,7 +277,7 @@ export default function PlaylistView({ playlist, onUpdatePlaylist }) {
                             <div {...provided.dragHandleProps} className="drag-handle" onClick={e => e.stopPropagation()}>
                               <GripVertical size={20} />
                             </div>
-                            
+
                             <div className="video-thumbnail">
                               <img src={video.thumbnail} alt={video.title} />
                               {isPlaying && (
@@ -286,13 +286,13 @@ export default function PlaylistView({ playlist, onUpdatePlaylist }) {
                                 </div>
                               )}
                             </div>
-                            
+
                             <div className="video-info">
                               <div className={`video-title ${isPlaying ? 'playing-text' : ''}`} title={video.title}>
                                 {video.title}
                               </div>
                             </div>
-                            
+
                             <button
                               className="remove-video-btn"
                               onClick={(e) => handleRemoveVideo(index, e)}

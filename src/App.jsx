@@ -1,8 +1,8 @@
 import React, { useState, useEffect } from 'react';
 import Sidebar from './components/Sidebar';
 import PlaylistView from './components/PlaylistView';
-import { getPlaylists, savePlaylists } from './utils/storage';
-import { PlaySquare } from 'lucide-react';
+import { fetchPlaylists, createPlaylist, deletePlaylist, updatePlaylistVideos } from './utils/db';
+import { PlaySquare, Loader2 } from 'lucide-react';
 
 export default function App() {
   const [playlists, setPlaylists] = useState([]);
@@ -10,31 +10,27 @@ export default function App() {
   const [isLoaded, setIsLoaded] = useState(false);
 
   useEffect(() => {
-    const loadedPlaylists = getPlaylists();
-    setPlaylists(loadedPlaylists);
-    if (loadedPlaylists.length > 0) {
-      setActivePlaylistId(loadedPlaylists[0].id);
+    async function loadData() {
+      const loadedPlaylists = await fetchPlaylists();
+      setPlaylists(loadedPlaylists);
+      if (loadedPlaylists.length > 0) {
+        setActivePlaylistId(loadedPlaylists[0].id);
+      }
+      setIsLoaded(true);
     }
-    setIsLoaded(true);
+    loadData();
   }, []);
 
-  useEffect(() => {
-    if (isLoaded) {
-      savePlaylists(playlists);
+  const handleCreatePlaylist = async (name) => {
+    const newPlaylist = await createPlaylist(name);
+    if (newPlaylist) {
+      setPlaylists(prev => [...prev, newPlaylist]);
+      setActivePlaylistId(newPlaylist.id);
     }
-  }, [playlists, isLoaded]);
-
-  const handleCreatePlaylist = (name) => {
-    const newPlaylist = {
-      id: crypto.randomUUID(),
-      name,
-      videos: []
-    };
-    setPlaylists(prev => [...prev, newPlaylist]);
-    setActivePlaylistId(newPlaylist.id);
   };
 
-  const handleDeletePlaylist = (id) => {
+  const handleDeletePlaylist = async (id) => {
+    await deletePlaylist(id);
     setPlaylists(prev => {
       const filtered = prev.filter(p => p.id !== id);
       if (activePlaylistId === id) {
@@ -44,13 +40,20 @@ export default function App() {
     });
   };
 
-  const handleUpdatePlaylist = (updatedPlaylist) => {
+  const handleUpdatePlaylist = async (updatedPlaylist) => {
     setPlaylists(prev => prev.map(p => p.id === updatedPlaylist.id ? updatedPlaylist : p));
+    await updatePlaylistVideos(updatedPlaylist.id, updatedPlaylist.videos);
   };
 
   const activePlaylist = playlists.find(p => p.id === activePlaylistId);
 
-  if (!isLoaded) return null;
+  if (!isLoaded) {
+    return (
+      <div className="app-container" style={{ alignItems: 'center', justifyContent: 'center', height: '100vh', width: '100vw' }}>
+        <Loader2 size={48} color="var(--accent-primary)" style={{ animation: 'spin 2s linear infinite' }} />
+      </div>
+    );
+  }
 
   return (
     <div className="app-container">
