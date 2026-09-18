@@ -54,7 +54,15 @@ export async function fetchPlaylists() {
   const playlists = playlistsData.map(p => ({
     id: p.id,
     name: p.name,
-    videos: videosData ? videosData.filter(v => v.playlist_id === p.id) : []
+    videos: videosData ? videosData
+      .filter(v => v.playlist_id === p.id)
+      .map(v => {
+        const { video_id, ...rest } = v;
+        return {
+          ...rest,
+          videoId: video_id
+        };
+      }) : []
   }));
 
   return playlists;
@@ -97,11 +105,15 @@ export async function deletePlaylist(id) {
 // We'll use upsert.
 export async function updatePlaylistVideos(playlistId, videos) {
   // Add playlist_id and position to each video
-  const videosToUpsert = videos.map((v, index) => ({
-    ...v,
-    playlist_id: playlistId,
-    position: index
-  }));
+  const videosToUpsert = videos.map((v, index) => {
+    const { videoId, ...rest } = v;
+    return {
+      ...rest,
+      video_id: videoId,
+      playlist_id: playlistId,
+      position: index
+    };
+  });
   
   // First, delete videos that are no longer in the list
   const currentVideoIds = videos.map(v => v.id);
