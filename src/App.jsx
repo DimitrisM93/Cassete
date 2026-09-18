@@ -93,7 +93,7 @@ export default function App() {
         ) : (
           <div className="empty-state">
             <img src="/favicon.png" alt="Cassete Logo" style={{ width: 64, height: 64, borderRadius: 12, objectFit: 'cover', marginBottom: '16px' }} />
-            <h2>Welcome to YT Playlists</h2>
+            <h2>Welcome to Cassete</h2>
             <p>Create a playlist to start adding videos.</p>
           </div>
         )}

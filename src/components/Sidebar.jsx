@@ -16,7 +16,7 @@ export default function Sidebar({ playlists, activePlaylistId, onSelectPlaylist,
     <div className="sidebar">
       <div className="sidebar-header">
         <img src="/favicon.png" alt="Logo" style={{ width: 32, height: 32, borderRadius: 6, objectFit: 'cover' }} />
-        <h1>YT Playlists</h1>
+        <h1>Cassete</h1>
       </div>
       
       <div className="playlists-container">

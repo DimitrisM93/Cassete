@@ -10,7 +10,7 @@ export default defineConfig({
       registerType: 'autoUpdate',
       manifest: {
         name: 'Vibrant YouTube Playlists',
-        short_name: 'YT Playlists',
+        short_name: 'Cassete',
         description: 'Custom YouTube playlists PWA',
         theme_color: '#8b5cf6',
         icons: [
