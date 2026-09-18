@@ -15,7 +15,7 @@ export default function Sidebar({ playlists, activePlaylistId, onSelectPlaylist,
   return (
     <div className="sidebar">
       <div className="sidebar-header">
-        <PlaySquare size={28} className="text-accent-primary" color="var(--accent-primary)" />
+        <img src="/favicon.png" alt="Logo" style={{ width: 32, height: 32, borderRadius: 6, objectFit: 'cover' }} />
         <h1>YT Playlists</h1>
       </div>
       

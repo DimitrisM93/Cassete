@@ -2,7 +2,7 @@ import React, { useState, useEffect } from 'react';
 import Sidebar from './components/Sidebar';
 import PlaylistView from './components/PlaylistView';
 import { fetchPlaylists, createPlaylist, deletePlaylist, updatePlaylistVideos } from './utils/db';
-import { PlaySquare, Loader2 } from 'lucide-react';
+import { Loader2 } from 'lucide-react';
 
 export default function App() {
   const [playlists, setPlaylists] = useState([]);
@@ -72,7 +72,7 @@ export default function App() {
           />
         ) : (
           <div className="empty-state">
-            <PlaySquare size={64} />
+            <img src="/favicon.png" alt="Cassete Logo" style={{ width: 64, height: 64, borderRadius: 12, objectFit: 'cover', marginBottom: '16px' }} />
             <h2>Welcome to YT Playlists</h2>
             <p>Create a playlist to start adding videos.</p>
           </div>
