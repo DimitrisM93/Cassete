@@ -1,7 +1,7 @@
 import React, { useState, useRef, useEffect } from 'react';
 import YouTube from 'react-youtube';
 import { DragDropContext, Droppable, Draggable } from '@hello-pangea/dnd';
-import { Plus, GripVertical, Trash2, ListVideo, Play, Pause, Music, Volume2, VolumeX } from 'lucide-react';
+import { Plus, GripVertical, Trash2, ListVideo, Play, Pause, Music, Volume2, VolumeX, SkipBack, SkipForward, Shuffle, Repeat1 } from 'lucide-react';
 import { getVideoDetails, extractVideoId } from '../utils/youtube';
 
 export default function PlaylistView({ playlist, onUpdatePlaylist }) {
@@ -13,6 +13,9 @@ export default function PlaylistView({ playlist, onUpdatePlaylist }) {
   const [duration, setDuration] = useState(0);
   const [volume, setVolume] = useState(100);
   const [duplicateError, setDuplicateError] = useState('');
+  const [isShuffle, setIsShuffle] = useState(false);
+  const [isRepeatSong, setIsRepeatSong] = useState(false);
+  const [endedSignal, setEndedSignal] = useState(0);
   const playerRef = useRef(null);
 
   // Progress tracker
@@ -137,8 +140,41 @@ export default function PlaylistView({ playlist, onUpdatePlaylist }) {
   };
 
   const onPlayerEnd = () => {
-    if (currentVideoIndex < playlist.videos.length - 1) {
+    setEndedSignal(prev => prev + 1);
+  };
+
+  useEffect(() => {
+    if (endedSignal > 0) {
+      if (isRepeatSong) {
+        if (playerRef.current) {
+          playerRef.current.seekTo(0, true);
+          playerRef.current.playVideo();
+        }
+      } else {
+        handleNext();
+      }
+    }
+  }, [endedSignal]);
+
+  const handlePrevious = () => {
+    if (currentTime > 3) {
+      if (playerRef.current) playerRef.current.seekTo(0, true);
+    } else if (currentVideoIndex > 0) {
+      setCurrentVideoIndex(currentVideoIndex - 1);
+    }
+  };
+
+  const handleNext = () => {
+    if (isShuffle) {
+      const nextIndex = Math.floor(Math.random() * playlist.videos.length);
+      setCurrentVideoIndex(nextIndex);
+    } else if (currentVideoIndex < playlist.videos.length - 1) {
       setCurrentVideoIndex(currentVideoIndex + 1);
+    } else if (isRepeatSong) {
+      if (playerRef.current) {
+        playerRef.current.seekTo(0, true);
+        playerRef.current.playVideo();
+      }
     }
   };
 
@@ -257,8 +293,24 @@ export default function PlaylistView({ playlist, onUpdatePlaylist }) {
               </div>
 
               <div className="audio-controls">
-                <div className="volume-container">
-                  {volume === 0 ? <VolumeX size={20} className="text-muted" /> : <Volume2 size={20} className="text-muted" />}
+                <button className={`control-btn ${isShuffle ? 'active' : ''}`} onClick={() => setIsShuffle(!isShuffle)} title="Shuffle">
+                  <Shuffle size={18} />
+                </button>
+                <button className="control-btn" onClick={handlePrevious} title="Previous">
+                  <SkipBack size={20} fill="currentColor" />
+                </button>
+                <button className="play-pause-btn" onClick={togglePlayPause}>
+                  {isPlaying ? <Pause size={28} fill="currentColor" /> : <Play size={28} fill="currentColor" />}
+                </button>
+                <button className="control-btn" onClick={handleNext} title="Next">
+                  <SkipForward size={20} fill="currentColor" />
+                </button>
+                <button className={`control-btn ${isRepeatSong ? 'active' : ''}`} onClick={() => setIsRepeatSong(!isRepeatSong)} title="Repeat Song">
+                  <Repeat1 size={18} />
+                </button>
+
+                <div className="volume-container" style={{ marginLeft: '16px' }}>
+                  {volume === 0 ? <VolumeX size={18} className="text-muted" /> : <Volume2 size={18} className="text-muted" />}
                   <input
                     type="range"
                     className="volume-slider"
@@ -268,10 +320,6 @@ export default function PlaylistView({ playlist, onUpdatePlaylist }) {
                     onChange={handleVolumeChange}
                   />
                 </div>
-
-                <button className="play-pause-btn" onClick={togglePlayPause}>
-                  {isPlaying ? <Pause size={28} fill="currentColor" /> : <Play size={28} fill="currentColor" />}
-                </button>
               </div>
             </div>
           </div>
