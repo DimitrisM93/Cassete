@@ -2,7 +2,7 @@ import React, { useState, useRef, useEffect } from 'react';
 import YouTube from 'react-youtube';
 import { DragDropContext, Droppable, Draggable } from '@hello-pangea/dnd';
 import { Plus, GripVertical, Trash2, ListVideo, Play, Pause, Music, Volume2, VolumeX } from 'lucide-react';
-import { getVideoDetails } from '../utils/youtube';
+import { getVideoDetails, extractVideoId } from '../utils/youtube';
 
 export default function PlaylistView({ playlist, onUpdatePlaylist }) {
   const [newVideoUrl, setNewVideoUrl] = useState('');
@@ -12,6 +12,7 @@ export default function PlaylistView({ playlist, onUpdatePlaylist }) {
   const [currentTime, setCurrentTime] = useState(0);
   const [duration, setDuration] = useState(0);
   const [volume, setVolume] = useState(100);
+  const [duplicateError, setDuplicateError] = useState('');
   const playerRef = useRef(null);
 
   // Progress tracker
@@ -38,14 +39,35 @@ export default function PlaylistView({ playlist, onUpdatePlaylist }) {
     setDuration(0);
   }, [playlist.id]);
 
+  // Clear duplicate error when typing
+  useEffect(() => {
+    if (duplicateError) setDuplicateError('');
+  }, [newVideoUrl]);
+
   const handleAddVideo = async (e) => {
     e.preventDefault();
     if (!newVideoUrl.trim()) return;
+
+    const videoId = extractVideoId(newVideoUrl);
+    if (videoId) {
+      const isDuplicate = playlist.videos.some(v => v.videoId === videoId);
+      if (isDuplicate) {
+        setDuplicateError("This song is already in the playlist!");
+        return;
+      }
+    }
 
     setIsLoading(true);
     const videoDetails = await getVideoDetails(newVideoUrl);
 
     if (videoDetails) {
+      const isDuplicate = playlist.videos.some(v => v.videoId === videoDetails.videoId);
+      if (isDuplicate) {
+        setDuplicateError("This song is already in the playlist!");
+        setIsLoading(false);
+        return;
+      }
+      
       const updatedVideos = [...playlist.videos, videoDetails];
       onUpdatePlaylist({ ...playlist, videos: updatedVideos });
       setNewVideoUrl('');
@@ -160,19 +182,27 @@ export default function PlaylistView({ playlist, onUpdatePlaylist }) {
     <div className="playlist-view">
       <div className="playlist-header">
         <h2>{playlist.name}</h2>
-        <form onSubmit={handleAddVideo} className="input-group">
-          <input
-            type="text"
-            className="input-field"
-            placeholder="Paste YouTube URL here..."
-            value={newVideoUrl}
-            onChange={(e) => setNewVideoUrl(e.target.value)}
-            disabled={isLoading}
-          />
-          <button type="submit" className="btn" disabled={isLoading}>
-            {isLoading ? 'Adding...' : <><Plus size={20} /> Add Song</>}
-          </button>
-        </form>
+        <div style={{ width: '100%' }}>
+          <form onSubmit={handleAddVideo} className="input-group">
+            <input
+              type="text"
+              className="input-field"
+              placeholder="Paste YouTube URL here..."
+              value={newVideoUrl}
+              onChange={(e) => setNewVideoUrl(e.target.value)}
+              disabled={isLoading}
+            />
+            <button type="submit" className="btn" disabled={isLoading}>
+              {isLoading ? 'Adding...' : <><Plus size={20} /> Add Song</>}
+            </button>
+          </form>
+          {duplicateError && (
+            <div className="duplicate-banner" style={{ marginTop: '12px', padding: '12px 16px', backgroundColor: 'rgba(239, 68, 68, 0.1)', color: '#ef4444', borderRadius: '8px', border: '1px solid rgba(239, 68, 68, 0.2)', fontSize: '0.9rem', fontWeight: '500', display: 'flex', alignItems: 'center', gap: '8px', animation: 'fadeIn 0.2s ease-out' }}>
+              <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><circle cx="12" cy="12" r="10"></circle><line x1="12" y1="8" x2="12" y2="12"></line><line x1="12" y1="16" x2="12.01" y2="16"></line></svg>
+              {duplicateError}
+            </div>
+          )}
+        </div>
       </div>
 
       {currentVideo && (
