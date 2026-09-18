@@ -3,7 +3,10 @@ import { createClient } from '@supabase/supabase-js';
 const supabaseUrl = import.meta.env.VITE_SUPABASE_URL;
 const supabaseAnonKey = import.meta.env.VITE_SUPABASE_ANON_KEY;
 
-export const supabase = createClient(supabaseUrl, supabaseAnonKey);
+// Only create the client if we have the variables, otherwise we'll handle the error in the UI
+export const supabase = supabaseUrl && supabaseAnonKey 
+  ? createClient(supabaseUrl, supabaseAnonKey) 
+  : null;
 
 // Manage Anonymous User ID
 const USER_ID_KEY = 'cassete_user_id';
@@ -20,6 +23,8 @@ export function getUserId() {
 // Database Operations
 
 export async function fetchPlaylists() {
+  if (!supabase) throw new Error('Supabase not configured');
+  
   const userId = getUserId();
   
   // Get playlists

@@ -9,12 +9,20 @@ export default function App() {
   const [activePlaylistId, setActivePlaylistId] = useState(null);
   const [isLoaded, setIsLoaded] = useState(false);
 
+  const [isConfigured, setIsConfigured] = useState(true);
+
   useEffect(() => {
     async function loadData() {
-      const loadedPlaylists = await fetchPlaylists();
-      setPlaylists(loadedPlaylists);
-      if (loadedPlaylists.length > 0) {
-        setActivePlaylistId(loadedPlaylists[0].id);
+      try {
+        const loadedPlaylists = await fetchPlaylists();
+        setPlaylists(loadedPlaylists);
+        if (loadedPlaylists.length > 0) {
+          setActivePlaylistId(loadedPlaylists[0].id);
+        }
+      } catch (err) {
+        if (err.message === 'Supabase not configured') {
+          setIsConfigured(false);
+        }
       }
       setIsLoaded(true);
     }
@@ -46,6 +54,18 @@ export default function App() {
   };
 
   const activePlaylist = playlists.find(p => p.id === activePlaylistId);
+
+  if (!isConfigured) {
+    return (
+      <div className="app-container" style={{ alignItems: 'center', justifyContent: 'center', height: '100vh', width: '100vw', flexDirection: 'column' }}>
+        <img src="/favicon.png" alt="Cassete Logo" style={{ width: 64, height: 64, borderRadius: 12, objectFit: 'cover', marginBottom: '16px' }} />
+        <h2>Database Not Configured</h2>
+        <p style={{ maxWidth: '400px', textAlign: 'center', color: 'var(--text-muted)', marginTop: '8px' }}>
+          It looks like the Supabase Environment Variables are missing. Make sure to add `VITE_SUPABASE_URL` and `VITE_SUPABASE_ANON_KEY` to Vercel and redeploy the app!
+        </p>
+      </div>
+    );
+  }
 
   if (!isLoaded) {
     return (
