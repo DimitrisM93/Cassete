@@ -1,7 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import Sidebar from './components/Sidebar';
 import PlaylistView from './components/PlaylistView';
-import { fetchPlaylists, createPlaylist, deletePlaylist, updatePlaylistVideos } from './utils/db';
+import { fetchPlaylists, createPlaylist, deletePlaylist, updatePlaylistVideos, renamePlaylist } from './utils/db';
 import { Loader2 } from 'lucide-react';
 
 export default function App() {
@@ -48,6 +48,13 @@ export default function App() {
     });
   };
 
+  const handleRenamePlaylist = async (id, newName) => {
+    const success = await renamePlaylist(id, newName);
+    if (success) {
+      setPlaylists(prev => prev.map(p => p.id === id ? { ...p, name: newName } : p));
+    }
+  };
+
   const handleUpdatePlaylist = async (updatedPlaylist) => {
     setPlaylists(prev => prev.map(p => p.id === updatedPlaylist.id ? updatedPlaylist : p));
     await updatePlaylistVideos(updatedPlaylist.id, updatedPlaylist.videos);
@@ -83,6 +90,7 @@ export default function App() {
         onSelectPlaylist={setActivePlaylistId}
         onCreatePlaylist={handleCreatePlaylist}
         onDeletePlaylist={handleDeletePlaylist}
+        onRenamePlaylist={handleRenamePlaylist}
       />
       <main className="main-content">
         {activePlaylist ? (

@@ -1,8 +1,10 @@
 import React, { useState } from 'react';
-import { Plus, Trash2 } from 'lucide-react';
+import { Plus, Trash2, Edit2, Check, X } from 'lucide-react';
 
-export default function Sidebar({ playlists, activePlaylistId, onSelectPlaylist, onCreatePlaylist, onDeletePlaylist }) {
+export default function Sidebar({ playlists, activePlaylistId, onSelectPlaylist, onCreatePlaylist, onDeletePlaylist, onRenamePlaylist }) {
   const [newPlaylistName, setNewPlaylistName] = useState('');
+  const [editingId, setEditingId] = useState(null);
+  const [editingName, setEditingName] = useState('');
 
   const handleCreate = (e) => {
     e.preventDefault();
@@ -10,6 +12,25 @@ export default function Sidebar({ playlists, activePlaylistId, onSelectPlaylist,
       onCreatePlaylist(newPlaylistName.trim());
       setNewPlaylistName('');
     }
+  };
+
+  const startEditing = (playlist, e) => {
+    e.stopPropagation();
+    setEditingId(playlist.id);
+    setEditingName(playlist.name);
+  };
+
+  const handleRename = (e) => {
+    e.stopPropagation();
+    if (editingName.trim() && editingName.trim() !== playlists.find(p => p.id === editingId)?.name) {
+      onRenamePlaylist(editingId, editingName.trim());
+    }
+    setEditingId(null);
+  };
+
+  const cancelEditing = (e) => {
+    e.stopPropagation();
+    setEditingId(null);
   };
 
   return (
@@ -31,19 +52,48 @@ export default function Sidebar({ playlists, activePlaylistId, onSelectPlaylist,
               className={`playlist-nav-item ${playlist.id === activePlaylistId ? 'active' : ''}`}
               onClick={() => onSelectPlaylist(playlist.id)}
             >
-              <span style={{ overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>
-                {playlist.name}
-              </span>
-              <button 
-                className="delete-btn"
-                onClick={(e) => {
-                  e.stopPropagation();
-                  onDeletePlaylist(playlist.id);
-                }}
-                title="Delete playlist"
-              >
-                <Trash2 size={16} />
-              </button>
+              {editingId === playlist.id ? (
+                <div style={{ display: 'flex', alignItems: 'center', width: '100%', gap: '8px' }} onClick={e => e.stopPropagation()}>
+                  <input
+                    type="text"
+                    value={editingName}
+                    onChange={e => setEditingName(e.target.value)}
+                    onKeyDown={e => {
+                      if (e.key === 'Enter') handleRename(e);
+                      if (e.key === 'Escape') cancelEditing(e);
+                    }}
+                    autoFocus
+                    style={{ flex: 1, minWidth: 0, background: 'transparent', color: 'inherit', border: 'none', borderBottom: '1px solid var(--accent-primary)', outline: 'none', padding: '2px 0' }}
+                  />
+                  <button className="delete-btn" onClick={handleRename} style={{ opacity: 1, padding: '2px' }}><Check size={16} /></button>
+                  <button className="delete-btn" onClick={cancelEditing} style={{ opacity: 1, padding: '2px' }}><X size={16} /></button>
+                </div>
+              ) : (
+                <>
+                  <span style={{ overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap', flex: 1 }}>
+                    {playlist.name}
+                  </span>
+                  <div style={{ display: 'flex', gap: '4px' }}>
+                    <button 
+                      className="delete-btn"
+                      onClick={(e) => startEditing(playlist, e)}
+                      title="Rename playlist"
+                    >
+                      <Edit2 size={16} />
+                    </button>
+                    <button 
+                      className="delete-btn"
+                      onClick={(e) => {
+                        e.stopPropagation();
+                        onDeletePlaylist(playlist.id);
+                      }}
+                      title="Delete playlist"
+                    >
+                      <Trash2 size={16} />
+                    </button>
+                  </div>
+                </>
+              )}
             </div>
           ))
         )}

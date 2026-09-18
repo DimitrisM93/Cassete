@@ -100,6 +100,20 @@ export async function deletePlaylist(id) {
   }
 }
 
+export async function renamePlaylist(id, newName) {
+  const { error } = await supabase
+    .from('playlists')
+    .update({ name: newName })
+    .eq('id', id)
+    .eq('user_id', getUserId());
+
+  if (error) {
+    console.error('Error renaming playlist:', error);
+    return false;
+  }
+  return true;
+}
+
 // For videos, since we have drag and drop ordering, the easiest way to keep it in sync 
 // is to delete all videos for a playlist and re-insert them, OR upsert them.
 // We'll use upsert.
