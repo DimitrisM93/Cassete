@@ -1,7 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import Sidebar from './components/Sidebar';
 import AuthScreen from './components/AuthScreen';
-import { fetchPlaylists, createPlaylist, deletePlaylist, updatePlaylistVideos, renamePlaylist, getSession, signOut } from './utils/db';
+import { fetchPlaylists, createPlaylist, deletePlaylist, updatePlaylistVideos, renamePlaylist, getSession, signOut, migrateAnonymousData, supabase } from './utils/db';
 import { Loader2 } from 'lucide-react';
 
 export default function App() {
@@ -30,17 +30,42 @@ export default function App() {
         const sessionUser = await getSession();
         if (sessionUser) {
           setUser(sessionUser);
+          await migrateAnonymousData(sessionUser.id);
           await loadData();
         } else {
           setIsLoaded(true);
         }
       } catch (err) {
+        console.error('Init error:', err);
         if (err.message === 'Supabase not configured') {
           setIsConfigured(false);
         }
+        setIsLoaded(true);
       }
     }
     init();
+
+    // Listen to Auth state changes to correctly handle login via Magic Link/Verification Link
+    let subscription;
+    if (supabase) {
+      const { data } = supabase.auth.onAuthStateChange(async (event, session) => {
+        if (session?.user && !user) {
+          setUser(session.user);
+          await migrateAnonymousData(session.user.id);
+          await loadData();
+        } else if (!session?.user && user) {
+          setUser(null);
+          setPlaylists([]);
+          setActivePlaylistId(null);
+          setIsLoaded(true);
+        }
+      });
+      subscription = data.subscription;
+    }
+
+    return () => {
+      subscription?.unsubscribe();
+    };
   }, []);
 
   const handleLogin = async (sessionUser) => {

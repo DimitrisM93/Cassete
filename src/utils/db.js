@@ -20,8 +20,14 @@ let currentUser = null;
 
 export async function getSession() {
   if (!supabase) return null;
-  const { data: { session } } = await supabase.auth.getSession();
-  currentUser = session?.user || null;
+  try {
+    const { data, error } = await supabase.auth.getSession();
+    if (error) console.error('Session error:', error);
+    currentUser = data?.session?.user || null;
+  } catch (err) {
+    console.error('Get session error:', err);
+    currentUser = null;
+  }
   return currentUser;
 }
 
@@ -55,7 +61,7 @@ export async function signOut() {
   currentUser = null;
 }
 
-async function migrateAnonymousData(newUserId) {
+export async function migrateAnonymousData(newUserId) {
   const anonId = getAnonymousId();
   if (anonId) {
     const { error } = await supabase
@@ -89,6 +95,10 @@ export async function fetchPlaylists() {
 
   if (playlistsError) {
     console.error('Error fetching playlists:', playlistsError);
+    return [];
+  }
+
+  if (!playlistsData || playlistsData.length === 0) {
     return [];
   }
 
