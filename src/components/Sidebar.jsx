@@ -1,5 +1,5 @@
 import React, { useState } from 'react';
-import { PlaySquare, Plus, Trash2 } from 'lucide-react';
+import { Plus, Trash2 } from 'lucide-react';
 
 export default function Sidebar({ playlists, activePlaylistId, onSelectPlaylist, onCreatePlaylist, onDeletePlaylist }) {
   const [newPlaylistName, setNewPlaylistName] = useState('');
