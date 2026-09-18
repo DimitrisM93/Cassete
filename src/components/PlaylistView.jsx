@@ -1,7 +1,9 @@
 import React, { useState, useRef, useEffect } from 'react';
 import YouTube from 'react-youtube';
 import { DragDropContext, Droppable, Draggable } from '@hello-pangea/dnd';
-import { Plus, GripVertical, Trash2, ListVideo, Play, Pause, Music, Volume2, VolumeX, SkipBack, SkipForward, Shuffle, Repeat1 } from 'lucide-react';
+import JSZip from 'jszip';
+import { saveAs } from 'file-saver';
+import { Plus, GripVertical, Trash2, ListVideo, Play, Pause, Music, Volume2, VolumeX, SkipBack, SkipForward, Shuffle, Repeat1, Download, Loader2 } from 'lucide-react';
 import { getVideoDetails, extractVideoId } from '../utils/youtube';
 
 export default function PlaylistView({ playlist, onUpdatePlaylist }) {
@@ -16,6 +18,8 @@ export default function PlaylistView({ playlist, onUpdatePlaylist }) {
   const [isShuffle, setIsShuffle] = useState(false);
   const [isRepeatSong, setIsRepeatSong] = useState(false);
   const [endedSignal, setEndedSignal] = useState(0);
+  const [isDownloading, setIsDownloading] = useState(false);
+  const [downloadProgress, setDownloadProgress] = useState('');
   const playerRef = useRef(null);
 
   // Progress tracker
@@ -212,12 +216,75 @@ export default function PlaylistView({ playlist, onUpdatePlaylist }) {
     }
   };
 
+  const handleDownloadSong = async (video, e) => {
+    if (e) e.stopPropagation();
+    try {
+      setIsDownloading(true);
+      setDownloadProgress(`Downloading: ${video.title}`);
+      
+      const response = await fetch(`/api/download?videoId=${video.videoId}`);
+      if (!response.ok) throw new Error('Download failed');
+      
+      const blob = await response.blob();
+      saveAs(blob, `${video.title}.mp3`);
+      
+    } catch (err) {
+      console.error(err);
+      alert('Failed to download song');
+    } finally {
+      setIsDownloading(false);
+      setDownloadProgress('');
+    }
+  };
+
+  const handleDownloadPlaylist = async () => {
+    if (playlist.videos.length === 0) return;
+    
+    try {
+      setIsDownloading(true);
+      const zip = new JSZip();
+      
+      for (let i = 0; i < playlist.videos.length; i++) {
+        const video = playlist.videos[i];
+        setDownloadProgress(`Zipping ${i + 1}/${playlist.videos.length}: ${video.title}`);
+        
+        const response = await fetch(`/api/download?videoId=${video.videoId}`);
+        if (!response.ok) throw new Error(`Failed to download ${video.title}`);
+        
+        const blob = await response.blob();
+        zip.file(`${i + 1}. ${video.title}.mp3`, blob);
+      }
+      
+      setDownloadProgress(`Finalizing zip...`);
+      const content = await zip.generateAsync({ type: 'blob' });
+      saveAs(content, `${playlist.name}.zip`);
+      
+    } catch (err) {
+      console.error(err);
+      alert('Failed to download playlist. Please try again.');
+    } finally {
+      setIsDownloading(false);
+      setDownloadProgress('');
+    }
+  };
+
   const currentVideo = playlist.videos[currentVideoIndex];
 
   return (
     <div className="playlist-view">
       <div className="playlist-header">
-        <h2>{playlist.name}</h2>
+        <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '16px' }}>
+          <h2 style={{ margin: 0 }}>{playlist.name}</h2>
+          {playlist.videos.length > 0 && (
+            <button 
+              className="btn btn-secondary" 
+              onClick={handleDownloadPlaylist} 
+              disabled={isDownloading}
+            >
+              <Download size={18} /> Download All
+            </button>
+          )}
+        </div>
         <div style={{ width: '100%' }}>
           <form onSubmit={handleAddVideo} className="input-group">
             <input
@@ -236,6 +303,12 @@ export default function PlaylistView({ playlist, onUpdatePlaylist }) {
             <div className="duplicate-banner" style={{ marginTop: '12px', padding: '12px 16px', backgroundColor: 'rgba(239, 68, 68, 0.1)', color: '#ef4444', borderRadius: '8px', border: '1px solid rgba(239, 68, 68, 0.2)', fontSize: '0.9rem', fontWeight: '500', display: 'flex', alignItems: 'center', gap: '8px', animation: 'fadeIn 0.2s ease-out' }}>
               <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><circle cx="12" cy="12" r="10"></circle><line x1="12" y1="8" x2="12" y2="12"></line><line x1="12" y1="16" x2="12.01" y2="16"></line></svg>
               {duplicateError}
+            </div>
+          )}
+          {downloadProgress && (
+            <div className="download-banner" style={{ marginTop: '12px', padding: '12px 16px', backgroundColor: 'rgba(139, 92, 246, 0.1)', color: 'var(--accent-primary)', borderRadius: '8px', border: '1px solid rgba(139, 92, 246, 0.2)', fontSize: '0.9rem', fontWeight: '500', display: 'flex', alignItems: 'center', gap: '8px', animation: 'fadeIn 0.2s ease-out' }}>
+              <Loader2 size={16} className="spin-icon" style={{ animation: 'spin 2s linear infinite' }} />
+              {downloadProgress}
             </div>
           )}
         </div>
@@ -371,13 +444,24 @@ export default function PlaylistView({ playlist, onUpdatePlaylist }) {
                               </div>
                             </div>
 
-                            <button
-                              className="remove-video-btn"
-                              onClick={(e) => handleRemoveVideo(index, e)}
-                              title="Remove from playlist"
-                            >
-                              <Trash2 size={18} />
-                            </button>
+                            <div style={{ display: 'flex', gap: '4px' }}>
+                              <button
+                                className="remove-video-btn"
+                                onClick={(e) => handleDownloadSong(video, e)}
+                                title="Download MP3"
+                                disabled={isDownloading}
+                                style={{ color: 'var(--accent-primary)' }}
+                              >
+                                <Download size={18} />
+                              </button>
+                              <button
+                                className="remove-video-btn"
+                                onClick={(e) => handleRemoveVideo(index, e)}
+                                title="Remove from playlist"
+                              >
+                                <Trash2 size={18} />
+                              </button>
+                            </div>
                           </div>
                         )}
                       </Draggable>
