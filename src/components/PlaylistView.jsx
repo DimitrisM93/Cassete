@@ -1,7 +1,7 @@
 import React, { useState, useRef, useEffect } from 'react';
 import YouTube from 'react-youtube';
 import { DragDropContext, Droppable, Draggable } from '@hello-pangea/dnd';
-import { Plus, GripVertical, Trash2, ListVideo, Play, Pause, Music } from 'lucide-react';
+import { Plus, GripVertical, Trash2, ListVideo, Play, Pause, Music, Volume2, VolumeX } from 'lucide-react';
 import { getVideoDetails } from '../utils/youtube';
 
 export default function PlaylistView({ playlist, onUpdatePlaylist }) {
@@ -9,12 +9,33 @@ export default function PlaylistView({ playlist, onUpdatePlaylist }) {
   const [isLoading, setIsLoading] = useState(false);
   const [currentVideoIndex, setCurrentVideoIndex] = useState(0);
   const [isPlaying, setIsPlaying] = useState(false);
+  const [currentTime, setCurrentTime] = useState(0);
+  const [duration, setDuration] = useState(0);
+  const [volume, setVolume] = useState(100);
   const playerRef = useRef(null);
+
+  // Progress tracker
+  useEffect(() => {
+    let interval;
+    if (isPlaying) {
+      interval = setInterval(async () => {
+        if (playerRef.current) {
+          const time = await playerRef.current.getCurrentTime();
+          const dur = await playerRef.current.getDuration();
+          if (time !== undefined) setCurrentTime(time);
+          if (dur !== undefined) setDuration(dur);
+        }
+      }, 1000);
+    }
+    return () => clearInterval(interval);
+  }, [isPlaying]);
 
   // Reset index when playlist changes
   useEffect(() => {
     setCurrentVideoIndex(0);
     setIsPlaying(false);
+    setCurrentTime(0);
+    setDuration(0);
   }, [playlist.id]);
 
   const handleAddVideo = async (e) => {
@@ -78,6 +99,7 @@ export default function PlaylistView({ playlist, onUpdatePlaylist }) {
 
   const onPlayerReady = (event) => {
     playerRef.current = event.target;
+    event.target.setVolume(volume);
   };
 
   const onPlayerStateChange = (event) => {
@@ -106,6 +128,29 @@ export default function PlaylistView({ playlist, onUpdatePlaylist }) {
       } else {
         playerRef.current.playVideo();
       }
+    }
+  };
+
+  const formatTime = (time) => {
+    if (!time || isNaN(time)) return "0:00";
+    const minutes = Math.floor(time / 60);
+    const seconds = Math.floor(time % 60);
+    return `${minutes}:${seconds.toString().padStart(2, '0')}`;
+  };
+
+  const handleSeek = (e) => {
+    const newTime = parseFloat(e.target.value);
+    setCurrentTime(newTime);
+    if (playerRef.current) {
+      playerRef.current.seekTo(newTime, true);
+    }
+  };
+
+  const handleVolumeChange = (e) => {
+    const newVol = parseInt(e.target.value, 10);
+    setVolume(newVol);
+    if (playerRef.current) {
+      playerRef.current.setVolume(newVol);
     }
   };
 
@@ -166,9 +211,34 @@ export default function PlaylistView({ playlist, onUpdatePlaylist }) {
                <div className="audio-bar-info">
                  <span className="now-playing-label">DATA SAVER AUDIO MODE</span>
                  <h3>{currentVideo.title}</h3>
+                 
+                 <div className="progress-container">
+                   <span className="time-text">{formatTime(currentTime)}</span>
+                   <input 
+                     type="range" 
+                     className="progress-slider" 
+                     min={0} 
+                     max={duration || 100} 
+                     value={currentTime} 
+                     onChange={handleSeek}
+                   />
+                   <span className="time-text">{formatTime(duration)}</span>
+                 </div>
                </div>
                
                <div className="audio-controls">
+                 <div className="volume-container">
+                   {volume === 0 ? <VolumeX size={20} className="text-muted" /> : <Volume2 size={20} className="text-muted" />}
+                   <input 
+                     type="range" 
+                     className="volume-slider" 
+                     min={0} 
+                     max={100} 
+                     value={volume} 
+                     onChange={handleVolumeChange}
+                   />
+                 </div>
+                 
                  <button className="play-pause-btn" onClick={togglePlayPause}>
                     {isPlaying ? <Pause size={28} fill="currentColor" /> : <Play size={28} fill="currentColor" />}
                  </button>
