@@ -1,6 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import Sidebar from './components/Sidebar';
 import AuthScreen from './components/AuthScreen';
+import PlaylistView from './components/PlaylistView';
 import { fetchPlaylists, createPlaylist, deletePlaylist, updatePlaylistVideos, renamePlaylist, getSession, signOut, migrateAnonymousData, supabase } from './utils/db';
 import { Loader2 } from 'lucide-react';
 
