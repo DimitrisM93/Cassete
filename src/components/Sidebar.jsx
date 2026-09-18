@@ -1,7 +1,7 @@
 import React, { useState } from 'react';
-import { Plus, Trash2, Edit2, Check, X } from 'lucide-react';
+import { Plus, Trash2, Edit2, Check, X, LogOut, User } from 'lucide-react';
 
-export default function Sidebar({ playlists, activePlaylistId, onSelectPlaylist, onCreatePlaylist, onDeletePlaylist, onRenamePlaylist }) {
+export default function Sidebar({ playlists, activePlaylistId, onSelectPlaylist, onCreatePlaylist, onDeletePlaylist, onRenamePlaylist, onSignOut, userEmail }) {
   const [newPlaylistName, setNewPlaylistName] = useState('');
   const [editingId, setEditingId] = useState(null);
   const [editingName, setEditingName] = useState('');
@@ -112,6 +112,16 @@ export default function Sidebar({ playlists, activePlaylistId, onSelectPlaylist,
             <Plus size={20} />
           </button>
         </form>
+      </div>
+
+      <div style={{ padding: '16px', borderTop: '1px solid var(--border-color)', display: 'flex', alignItems: 'center', justifyContent: 'space-between', color: 'var(--text-muted)' }}>
+        <div style={{ display: 'flex', alignItems: 'center', gap: '8px', overflow: 'hidden' }}>
+          <User size={16} />
+          <span style={{ fontSize: '0.8rem', whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }}>{userEmail}</span>
+        </div>
+        <button onClick={onSignOut} className="delete-btn" title="Sign Out" style={{ opacity: 1, padding: '4px' }}>
+          <LogOut size={16} />
+        </button>
       </div>
     </div>
   );

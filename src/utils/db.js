@@ -8,24 +8,77 @@ export const supabase = supabaseUrl && supabaseAnonKey
   ? createClient(supabaseUrl, supabaseAnonKey) 
   : null;
 
-// Manage Anonymous User ID
+// Manage Anonymous User ID for Migration
 const USER_ID_KEY = 'cassete_user_id';
 
-export function getUserId() {
-  let userId = localStorage.getItem(USER_ID_KEY);
-  if (!userId) {
-    userId = crypto.randomUUID();
-    localStorage.setItem(USER_ID_KEY, userId);
+export function getAnonymousId() {
+  return localStorage.getItem(USER_ID_KEY);
+}
+
+// Global variable for current authenticated user
+let currentUser = null;
+
+export async function getSession() {
+  if (!supabase) return null;
+  const { data: { session } } = await supabase.auth.getSession();
+  currentUser = session?.user || null;
+  return currentUser;
+}
+
+export async function signUp(email, password) {
+  if (!supabase) return { error: 'Supabase not configured' };
+  const { data, error } = await supabase.auth.signUp({ email, password });
+  if (error) return { error: error.message };
+  
+  if (data.user) {
+    currentUser = data.user;
+    await migrateAnonymousData(data.user.id);
   }
-  return userId;
+  return { user: data.user };
+}
+
+export async function signIn(email, password) {
+  if (!supabase) return { error: 'Supabase not configured' };
+  const { data, error } = await supabase.auth.signInWithPassword({ email, password });
+  if (error) return { error: error.message };
+  
+  if (data.user) {
+    currentUser = data.user;
+    await migrateAnonymousData(data.user.id);
+  }
+  return { user: data.user };
+}
+
+export async function signOut() {
+  if (!supabase) return;
+  await supabase.auth.signOut();
+  currentUser = null;
+}
+
+async function migrateAnonymousData(newUserId) {
+  const anonId = getAnonymousId();
+  if (anonId) {
+    const { error } = await supabase
+      .from('playlists')
+      .update({ user_id: newUserId })
+      .eq('user_id', anonId);
+      
+    if (error) {
+      console.error('Error migrating playlists:', error);
+    } else {
+      console.log('Successfully migrated playlists to new account.');
+      localStorage.removeItem(USER_ID_KEY);
+    }
+  }
 }
 
 // Database Operations
 
 export async function fetchPlaylists() {
   if (!supabase) throw new Error('Supabase not configured');
+  if (!currentUser) return [];
   
-  const userId = getUserId();
+  const userId = currentUser.id;
   
   // Get playlists
   const { data: playlistsData, error: playlistsError } = await supabase
@@ -69,10 +122,11 @@ export async function fetchPlaylists() {
 }
 
 export async function createPlaylist(name) {
+  if (!currentUser) return null;
   const playlistId = crypto.randomUUID();
   const newPlaylist = {
     id: playlistId,
-    user_id: getUserId(),
+    user_id: currentUser.id,
     name: name
   };
 
@@ -89,11 +143,12 @@ export async function createPlaylist(name) {
 }
 
 export async function deletePlaylist(id) {
+  if (!currentUser) return;
   const { error } = await supabase
     .from('playlists')
     .delete()
     .eq('id', id)
-    .eq('user_id', getUserId()); // extra safety
+    .eq('user_id', currentUser.id); // extra safety
 
   if (error) {
     console.error('Error deleting playlist:', error);
@@ -101,11 +156,12 @@ export async function deletePlaylist(id) {
 }
 
 export async function renamePlaylist(id, newName) {
+  if (!currentUser) return false;
   const { error } = await supabase
     .from('playlists')
     .update({ name: newName })
     .eq('id', id)
-    .eq('user_id', getUserId());
+    .eq('user_id', currentUser.id);
 
   if (error) {
     console.error('Error renaming playlist:', error);

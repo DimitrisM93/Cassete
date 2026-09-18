@@ -1,7 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import Sidebar from './components/Sidebar';
-import PlaylistView from './components/PlaylistView';
-import { fetchPlaylists, createPlaylist, deletePlaylist, updatePlaylistVideos, renamePlaylist } from './utils/db';
+import AuthScreen from './components/AuthScreen';
+import { fetchPlaylists, createPlaylist, deletePlaylist, updatePlaylistVideos, renamePlaylist, getSession, signOut } from './utils/db';
 import { Loader2 } from 'lucide-react';
 
 export default function App() {
@@ -11,23 +11,50 @@ export default function App() {
 
   const [isConfigured, setIsConfigured] = useState(true);
 
+  const [user, setUser] = useState(null);
+
+  const loadData = async () => {
+    const loadedPlaylists = await fetchPlaylists();
+    setPlaylists(loadedPlaylists);
+    if (loadedPlaylists.length > 0) {
+      setActivePlaylistId(loadedPlaylists[0].id);
+    } else {
+      setActivePlaylistId(null);
+    }
+    setIsLoaded(true);
+  };
+
   useEffect(() => {
-    async function loadData() {
+    async function init() {
       try {
-        const loadedPlaylists = await fetchPlaylists();
-        setPlaylists(loadedPlaylists);
-        if (loadedPlaylists.length > 0) {
-          setActivePlaylistId(loadedPlaylists[0].id);
+        const sessionUser = await getSession();
+        if (sessionUser) {
+          setUser(sessionUser);
+          await loadData();
+        } else {
+          setIsLoaded(true);
         }
       } catch (err) {
         if (err.message === 'Supabase not configured') {
           setIsConfigured(false);
         }
       }
-      setIsLoaded(true);
     }
-    loadData();
+    init();
   }, []);
+
+  const handleLogin = async (sessionUser) => {
+    setIsLoaded(false);
+    setUser(sessionUser);
+    await loadData();
+  };
+
+  const handleSignOut = async () => {
+    await signOut();
+    setUser(null);
+    setPlaylists([]);
+    setActivePlaylistId(null);
+  };
 
   const handleCreatePlaylist = async (name) => {
     const newPlaylist = await createPlaylist(name);
@@ -82,6 +109,10 @@ export default function App() {
     );
   }
 
+  if (!user) {
+    return <AuthScreen onLogin={handleLogin} />;
+  }
+
   return (
     <div className="app-container">
       <Sidebar 
@@ -91,6 +122,8 @@ export default function App() {
         onCreatePlaylist={handleCreatePlaylist}
         onDeletePlaylist={handleDeletePlaylist}
         onRenamePlaylist={handleRenamePlaylist}
+        onSignOut={handleSignOut}
+        userEmail={user?.email}
       />
       <main className="main-content">
         {activePlaylist ? (
