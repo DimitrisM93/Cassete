@@ -8,8 +8,14 @@
   <title>Cassete</title>
 </head>
 
-<body>
-  <div id="root"></div>
+<body style="background-color: #0f0f13; color: #f8f8f8; font-family: sans-serif; margin: 0; padding: 0;">
+  <div id="root">
+    <!-- This will show if the JS/CSS fails to load (e.g. during a PWA update) -->
+    <div style="display: flex; align-items: center; justify-content: center; height: 100vh; width: 100vw; flex-direction: column; text-align: center;">
+      <h2 style="margin-bottom: 8px;">Updating Cassete...</h2>
+      <p style="color: #a0a0ab; max-width: 300px;">If this screen stays for more than a few seconds, please close the app and reopen it, or clear your cache.</p>
+    </div>
+  </div>
   <script type="module" src="/src/main.jsx"></script>
 </body>
 
