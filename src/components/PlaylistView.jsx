@@ -21,6 +21,64 @@ export default function PlaylistView({ playlist, onUpdatePlaylist }) {
   const [isDownloading, setIsDownloading] = useState(false);
   const [downloadProgress, setDownloadProgress] = useState('');
   const playerRef = useRef(null);
+  const currentVideo = playlist.videos[currentVideoIndex];
+
+  const stateRef = useRef({ currentTime, currentVideoIndex, playlist, isShuffle, isRepeatSong });
+
+  useEffect(() => {
+    stateRef.current = { currentTime, currentVideoIndex, playlist, isShuffle, isRepeatSong };
+  });
+
+  // Set Media Session metadata
+  useEffect(() => {
+    if ('mediaSession' in navigator && currentVideo) {
+      navigator.mediaSession.metadata = new MediaMetadata({
+        title: currentVideo.title,
+        artist: playlist.name || 'Cassete',
+        artwork: [
+          { src: currentVideo.thumbnail, sizes: '512x512', type: 'image/jpeg' }
+        ]
+      });
+    }
+  }, [currentVideo, playlist.name]);
+
+  // Set Media Session action handlers
+  useEffect(() => {
+    if ('mediaSession' in navigator) {
+      try {
+        navigator.mediaSession.setActionHandler('play', () => {
+          if (playerRef.current) playerRef.current.playVideo();
+        });
+        navigator.mediaSession.setActionHandler('pause', () => {
+          if (playerRef.current) playerRef.current.pauseVideo();
+        });
+        navigator.mediaSession.setActionHandler('previoustrack', () => {
+          const { currentTime, currentVideoIndex } = stateRef.current;
+          if (currentTime > 3) {
+            if (playerRef.current) playerRef.current.seekTo(0, true);
+          } else if (currentVideoIndex > 0) {
+            setCurrentVideoIndex(currentVideoIndex - 1);
+          }
+        });
+        navigator.mediaSession.setActionHandler('nexttrack', () => {
+          const { currentVideoIndex, playlist, isShuffle, isRepeatSong } = stateRef.current;
+          if (isShuffle) {
+            const nextIndex = Math.floor(Math.random() * playlist.videos.length);
+            setCurrentVideoIndex(nextIndex);
+          } else if (currentVideoIndex < playlist.videos.length - 1) {
+            setCurrentVideoIndex(currentVideoIndex + 1);
+          } else if (isRepeatSong) {
+            if (playerRef.current) {
+              playerRef.current.seekTo(0, true);
+              playerRef.current.playVideo();
+            }
+          }
+        });
+      } catch (error) {
+        console.error("MediaSession action handlers not supported", error);
+      }
+    }
+  }, []);
 
   // Progress tracker
   useEffect(() => {
@@ -268,8 +326,6 @@ export default function PlaylistView({ playlist, onUpdatePlaylist }) {
     }
   };
 
-  const currentVideo = playlist.videos[currentVideoIndex];
-
   return (
     <div className="playlist-view">
       <div className="playlist-header">
@@ -316,13 +372,13 @@ export default function PlaylistView({ playlist, onUpdatePlaylist }) {
 
       {currentVideo && (
         <div className="audio-player-wrapper">
-          {/* Hide the actual video player off-screen */}
-          <div style={{ position: 'absolute', top: '-9999px', left: '-9999px', width: '200px', height: '200px' }}>
+          {/* Keep the actual video player in the viewport but visually hidden to allow background/off-screen playback */}
+          <div style={{ position: 'fixed', top: '0', left: '0', width: '10px', height: '10px', opacity: 0, pointerEvents: 'none', zIndex: -10 }}>
             <YouTube
               videoId={currentVideo.videoId}
               opts={{
-                width: '200',
-                height: '200',
+                width: '10',
+                height: '10',
                 playerVars: {
                   autoplay: 1, // Try to autoplay
                   modestbranding: 1,
