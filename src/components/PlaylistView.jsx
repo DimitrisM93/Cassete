@@ -21,6 +21,7 @@ export default function PlaylistView({ playlist, onUpdatePlaylist }) {
   const [isDownloading, setIsDownloading] = useState(false);
   const [downloadProgress, setDownloadProgress] = useState('');
   const playerRef = useRef(null);
+  const bgAudioRef = useRef(null);
   const currentVideo = playlist.videos[currentVideoIndex];
 
   const stateRef = useRef({ currentTime, currentVideoIndex, playlist, isShuffle, isRepeatSong });
@@ -48,9 +49,11 @@ export default function PlaylistView({ playlist, onUpdatePlaylist }) {
       try {
         navigator.mediaSession.setActionHandler('play', () => {
           if (playerRef.current) playerRef.current.playVideo();
+          if (bgAudioRef.current) bgAudioRef.current.play().catch(() => {});
         });
         navigator.mediaSession.setActionHandler('pause', () => {
           if (playerRef.current) playerRef.current.pauseVideo();
+          if (bgAudioRef.current) bgAudioRef.current.pause();
         });
         navigator.mediaSession.setActionHandler('previoustrack', () => {
           const { currentTime, currentVideoIndex } = stateRef.current;
@@ -193,10 +196,15 @@ export default function PlaylistView({ playlist, onUpdatePlaylist }) {
     if (event.data === 1) { // Playing
       setIsPlaying(true);
       event.target.setPlaybackQuality('small'); // Attempt to force low data
+      if (bgAudioRef.current) {
+        bgAudioRef.current.play().catch(e => console.log('Audio play failed', e));
+      }
     } else if (event.data === 2) { // Paused
       setIsPlaying(false);
+      if (bgAudioRef.current) bgAudioRef.current.pause();
     } else if (event.data === 0) { // Ended
       setIsPlaying(false);
+      if (bgAudioRef.current) bgAudioRef.current.pause();
       onPlayerEnd();
     }
   };
@@ -245,8 +253,12 @@ export default function PlaylistView({ playlist, onUpdatePlaylist }) {
       const state = playerRef.current.getPlayerState();
       if (state === 1) {
         playerRef.current.pauseVideo();
+        if (bgAudioRef.current) bgAudioRef.current.pause();
       } else {
         playerRef.current.playVideo();
+        if (bgAudioRef.current) {
+          bgAudioRef.current.play().catch(e => console.log('Audio play failed', e));
+        }
       }
     }
   };
@@ -390,6 +402,15 @@ export default function PlaylistView({ playlist, onUpdatePlaylist }) {
               onStateChange={onPlayerStateChange}
             />
           </div>
+          
+          {/* Silent audio element to keep background process alive on mobile */}
+          <audio 
+            ref={bgAudioRef} 
+            loop 
+            src="data:audio/wav;base64,UklGRigAAABXQVZFZm10IBIAAAABAAEARKwAAIhYAQACABAAAABkYXRhAgAAAAEA" 
+            style={{ display: 'none' }} 
+            playsInline
+          />
 
           {/* Custom Audio Bar UI */}
           <div className="audio-bar">
